@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="ระบบติดตามอุณหภูมิตู้เย็นสำหรับเก็บวัคซีนและยา">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Fridge Monitor">
+    
+    <title>Fridge Monitor</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="./icons/icon-192.png">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="./css/style.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <!-- jsPDF + html2canvas for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Firebase SDK for Push Notifications -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+</head>
+<body>
+    <!-- ========== HEADER ========== -->
+    <header class="header">
+        <h1>🌡️ Fridge Monitor</h1>
+        <div class="header-buttons">
+            <button id="notificationBtn" class="icon-btn" title="การแจ้งเตือน">
+                <span class="notification-icon">🔔</span>
+                <span id="notificationBadge" class="badge hidden">!</span>
+            </button>
+            <button id="refreshBtn" class="icon-btn" title="รีเฟรช">↻</button>
+        </div>
+    </header>
+
+    <!-- ========== LOADING ========== -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <!-- ========== ERROR MESSAGE ========== -->
+    <div id="errorMsg" class="error-msg hidden">
+        <p id="errorText"></p>
+    </div>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="container">
+        
+        <!-- DEVICES LIST -->
+        <section id="devicesList" class="devices-section">
+            <!-- Devices will be inserted here dynamically -->
+        </section>
+
+        <!-- DEVICE DETAIL -->
+        <section id="deviceDetail" class="device-detail hidden">
+            <button id="backBtn" class="back-btn">← กลับ</button>
+            
+            <div class="device-header">
+                <h2 id="deviceTitle">กำลังโหลด...</h2>
+                <div class="header-actions">
+                    <button id="editNameBtn" class="btn-icon" title="แก้ไขชื่อ">✏️</button>
+                    <button id="exportPdfBtn" class="btn-primary">📄 Export PDF</button>
+                </div>
+            </div>
+
+            <!-- Current Temperature Cards -->
+            <div class="current-temp">
+                <div class="temp-card chiller">
+                    <div class="temp-label">Chiller</div>
+                    <div class="temp-value" id="chillerTemp">--</div>
+                    <div class="temp-unit">°C</div>
+                    <div class="temp-status" id="chillerStatus">รอข้อมูล</div>
+                </div>
+                <div class="temp-card freezer">
+                    <div class="temp-label">Freezer</div>
+                    <div class="temp-value" id="freezerTemp">--</div>
+                    <div class="temp-unit">°C</div>
+                    <div class="temp-status" id="freezerStatus">รอข้อมูล</div>
+                </div>
+            </div>
+
+            <!-- Time Range Selector -->
+            <div class="time-range">
+                <button class="range-btn active" data-hours="24">24 ชั่วโมง</button>
+                <button class="range-btn" data-hours="48">48 ชั่วโมง</button>
+                <button class="range-btn" data-hours="168">7 วัน</button>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="chart-container" id="chartContainer">
+                <canvas id="tempChart"></canvas>
+            </div>
+
+            <!-- Last Update Time -->
+            <div class="last-update">
+                อัพเดทล่าสุด: <span id="lastUpdate">--</span>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========== MODALS ========== -->
+    
+    <!-- Edit Name Modal -->
+    <div id="editModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>✏️ แก้ไขชื่อเครื่อง</h3>
+            <input type="text" id="newNameInput" placeholder="ชื่อเครื่องใหม่" maxlength="50">
+            <div class="modal-buttons">
+                <button id="cancelEditBtn" class="btn-secondary">ยกเลิก</button>
+                <button id="saveNameBtn" class="btn-primary">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export PDF Modal -->
+    <div id="exportModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>📄 Export รายงานรายเดือน</h3>
+            <div class="export-form">
+                <label for="monthSelect">เลือกเดือน:</label>
+                <select id="monthSelect">
+                    <option value="1">มกราคม</option>
+                    <option value="2">กุมภาพันธ์</option>
+                    <option value="3">มีนาคม</option>
+                    <option value="4">เมษายน</option>
+                    <option value="5">พฤษภาคม</option>
+                    <option value="6">มิถุนายน</option>
+                    <option value="7">กรกฎาคม</option>
+                    <option value="8">สิงหาคม</option>
+                    <option value="9">กันยายน</option>
+                    <option value="10">ตุลาคม</option>
+                    <option value="11">พฤศจิกายน</option>
+                    <option value="12">ธันวาคม</option>
+                </select>
+                
+                <label for="yearSelect">เลือกปี:</label>
+                <select id="yearSelect">
+                    <!-- Will be populated by JavaScript -->
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelExportBtn" class="btn-secondary">ยกเลิก</button>
+                <button id="generatePdfBtn" class="btn-primary">สร้าง PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Settings Modal -->
+    <div id="notificationModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>🔔 การแจ้งเตือน</h3>
+            <div class="notification-settings">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h4>Push Notifications</h4>
+                        <p>รับการแจ้งเตือนแม้ไม่เปิดแอพ</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="notificationToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div id="notificationStatus" class="notification-status hidden">
+                    <p id="notificationStatusText"></p>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="closeNotificationBtn" class="btn-primary">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Install Prompt -->
+    <div id="installPrompt" class="install-prompt hidden">
+        <p>📱 ติดตั้ง Fridge Monitor บนโทรศัพท์</p>
+        <div class="install-buttons">
+            <button id="installBtn" class="btn-primary">ติดตั้ง</button>
+            <button id="dismissBtn" class="btn-secondary">ไว้ทีหลัง</button>
+        </div>
+    </div>
+
+    <!-- PDF Preview (Hidden) -->
+    <div id="pdfPreview" class="pdf-preview hidden"></div>
+
+    <!-- ========== SCRIPTS ========== -->
+    <script src="./js/firebase-config.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/notifications.js"></script>
+    <script src="./js/charts.js"></script>
+    <script src="./js/pdf-export.js"></script>
+    <script src="./js/onboarding.js"></script> <!-- เพิ่มบรรทัดนี้ -->
+    <script src="./js/app.js"></script>
+    </body>
+</html>
