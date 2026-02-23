@@ -1,5 +1,5 @@
 // ใส่ Google Apps Script URL ของคุณที่นี่
-const API_URL = 'https://script.google.com/macros/s/AKfycbzJZMv7DQHHx2WHDRFmwVfUdayL8LH8i2N5YW76s-vcRMq86k1k1CqXjZWsWgBVYx6P9Q/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyLZcKns4KOyqZfzFc_qDYGr42wXpIIK7xKk9FRJGll_SY8xxn-IIXsRUBW9yfrvIfRWQ/exec';
 
 class API {
   static async getDevices() {
