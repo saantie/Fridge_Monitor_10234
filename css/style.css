@@ -96,6 +96,13 @@ html {
   gap: 0.5rem;
 }
 
+.app-version {
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.75;
+  letter-spacing: 0;
+}
+
 .header-buttons {
   display: flex;
   gap: 0.75rem;

@@ -3,7 +3,11 @@
  * Handles offline caching and background sync
  */
 
-const CACHE_NAME = 'fridge-monitor-v1.1.0';
+// APP_VERSION is the single source of truth (js/version.js) - also shown in
+// the header, so bumping it both busts this cache and shows up visibly in
+// the UI, making it obvious when the SW has actually picked up a new deploy.
+importScripts('./js/version.js');
+const CACHE_NAME = 'fridge-monitor-' + APP_VERSION;
 
 // App shell files: always fetched from network first so edits go live
 // immediately, without needing to bump CACHE_NAME on every deploy.
@@ -13,6 +17,7 @@ const STATIC_ASSETS = [
   './index.html',
   './manifest.json',
   './css/style.css',
+  './js/version.js',
   './js/app.js',
   './js/api.js',
   './js/charts.js',

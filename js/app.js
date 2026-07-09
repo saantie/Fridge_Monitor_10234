@@ -10,6 +10,9 @@ let tempChart = null;
 let deferredPrompt = null;
 
 // ========== DOM ELEMENTS ==========
+const appVersionEl = document.getElementById('appVersion');
+if (appVersionEl) appVersionEl.textContent = APP_VERSION;
+
 const loading = document.getElementById('loading');
 const errorMsg = document.getElementById('errorMsg');
 const errorText = document.getElementById('errorText');

@@ -37,7 +37,7 @@
 <body>
     <!-- ========== HEADER ========== -->
     <header class="header">
-        <h1>🌡️ Fridge Monitor</h1>
+        <h1>🌡️ Fridge Monitor <span id="appVersion" class="app-version"></span></h1>
         <div class="header-buttons">
             <button id="notificationBtn" class="icon-btn" title="การแจ้งเตือน">
                 <span class="notification-icon">🔔</span>
@@ -227,6 +227,7 @@
     <div id="pdfPreview" class="pdf-preview hidden"></div>
 
     <!-- ========== SCRIPTS ========== -->
+    <script src="./js/version.js"></script>
     <script src="./js/firebase-config.js"></script>
     <script src="./js/api.js"></script>
     <script src="./js/notifications.js"></script>
