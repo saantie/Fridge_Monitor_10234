@@ -99,6 +99,31 @@
                 <button class="range-btn active" data-hours="24">24 ชั่วโมง</button>
                 <button class="range-btn" data-hours="48">48 ชั่วโมง</button>
                 <button class="range-btn" data-hours="168">7 วัน</button>
+                <button class="range-btn" id="monthRangeBtn" data-hours="month">📅 ย้อนหลังเป็นเดือน</button>
+            </div>
+
+            <!-- Month Picker (shown when "ย้อนหลังเป็นเดือน" is selected) -->
+            <div id="monthPicker" class="month-picker hidden">
+                <label for="chartMonthSelect">เดือน:</label>
+                <select id="chartMonthSelect">
+                    <option value="1">มกราคม</option>
+                    <option value="2">กุมภาพันธ์</option>
+                    <option value="3">มีนาคม</option>
+                    <option value="4">เมษายน</option>
+                    <option value="5">พฤษภาคม</option>
+                    <option value="6">มิถุนายน</option>
+                    <option value="7">กรกฎาคม</option>
+                    <option value="8">สิงหาคม</option>
+                    <option value="9">กันยายน</option>
+                    <option value="10">ตุลาคม</option>
+                    <option value="11">พฤศจิกายน</option>
+                    <option value="12">ธันวาคม</option>
+                </select>
+                <label for="chartYearSelect">ปี:</label>
+                <select id="chartYearSelect">
+                    <!-- Will be populated by JavaScript -->
+                </select>
+                <button id="viewMonthBtn" class="btn-primary">ดูข้อมูล</button>
             </div>
 
             <!-- Chart Container -->

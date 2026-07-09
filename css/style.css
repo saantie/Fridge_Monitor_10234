@@ -620,6 +620,40 @@ html {
   box-shadow: var(--shadow-md);
 }
 
+/* ========== MONTH PICKER ========== */
+.month-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--card-bg);
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.5rem;
+}
+
+.month-picker label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.month-picker select {
+  padding: 0.6rem 0.9rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.month-picker .btn-primary {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  margin-left: auto;
+}
+
 /* ========== CHART CONTAINER ========== */
 .chart-container {
   background: var(--card-bg);
@@ -1409,7 +1443,17 @@ input:checked + .slider:before {
   .time-range {
     flex-direction: column;
   }
-  
+
+  .month-picker {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .month-picker .btn-primary {
+    margin-left: 0;
+    width: 100%;
+  }
+
   .chart-container {
     padding: 1rem;
   }

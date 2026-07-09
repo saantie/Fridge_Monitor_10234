@@ -13,6 +13,14 @@ class TempChart {
   }
 
   create(data) {
+    // A full month of readings can be thousands of points - sample down so
+    // the chart stays responsive; pan/zoom lets users inspect any stretch closely.
+    const MAX_POINTS = 500;
+    if (data.length > MAX_POINTS) {
+      const step = Math.ceil(data.length / MAX_POINTS);
+      data = data.filter((_, index) => index % step === 0);
+    }
+
     const timestamps = data.map(d => {
       const date = new Date(d.timestamp);
       return date.toLocaleString('th-TH', {

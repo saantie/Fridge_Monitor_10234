@@ -51,6 +51,12 @@ const yearSelect = document.getElementById('yearSelect');
 const cancelExportBtn = document.getElementById('cancelExportBtn');
 const generatePdfBtn = document.getElementById('generatePdfBtn');
 
+// Month picker (historical chart view)
+const monthPicker = document.getElementById('monthPicker');
+const chartMonthSelect = document.getElementById('chartMonthSelect');
+const chartYearSelect = document.getElementById('chartYearSelect');
+const viewMonthBtn = document.getElementById('viewMonthBtn');
+
 // Notification modal
 const notificationToggle = document.getElementById('notificationToggle');
 const notificationStatus = document.getElementById('notificationStatus');
@@ -70,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupInstallPrompt();
   initNotifications();
   populateYearSelect();
+  populateChartYearSelect();
 });
 
 /**
@@ -124,6 +131,9 @@ function setupEventListeners() {
   installBtn.addEventListener('click', handleInstall);
   dismissBtn.addEventListener('click', dismissInstallPrompt);
   
+  // Month picker (historical chart view)
+  viewMonthBtn.addEventListener('click', handleViewMonth);
+
   // Time range buttons
   document.querySelectorAll('.range-btn').forEach(btn => {
     btn.addEventListener('click', handleTimeRangeChange);
@@ -352,7 +362,14 @@ async function showDeviceDetail(device) {
   if (device.latest_data) {
     updateCurrentTemp(device.latest_data);
   }
-  
+
+  // Reset the range selector back to its default (24h) state each time a
+  // device is opened, in case the month picker was left open previously.
+  monthPicker.classList.add('hidden');
+  document.querySelectorAll('.range-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.hours === '24');
+  });
+
   await loadDeviceData(device, 24);
 }
 
@@ -377,6 +394,38 @@ async function loadDeviceData(device, hours) {
   } catch (error) {
     console.error('❌ Load device data failed:', error);
     showError('ไม่สามารถโหลดข้อมูลกราฟได้: ' + error.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function loadDeviceMonthData(device, year, month) {
+  try {
+    showLoading();
+    console.log(`📊 Loading ${year}-${month} data for ${device.device_name}...`);
+
+    const response = await API.getMonthlyData(device.device_name, year, month);
+
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
+    if (!tempChart) {
+      tempChart = new TempChart('tempChart');
+    }
+
+    if (!response.data || response.data.length === 0) {
+      tempChart.create([]);
+      showError('ไม่มีข้อมูลของเดือนที่เลือก');
+      return;
+    }
+
+    tempChart.create(response.data);
+    console.log(`✅ Loaded ${response.data.length} data points`);
+
+  } catch (error) {
+    console.error('❌ Load monthly data failed:', error);
+    showError('ไม่สามารถโหลดข้อมูลย้อนหลังได้: ' + error.message);
   } finally {
     hideLoading();
   }
@@ -440,13 +489,49 @@ function handleTimeRangeChange(e) {
     btn.classList.remove('active');
   });
   e.target.classList.add('active');
-  
+
+  // "ย้อนหลังเป็นเดือน" just reveals the month/year picker - it doesn't
+  // fetch anything until the user confirms with "ดูข้อมูล".
+  if (e.target.dataset.hours === 'month') {
+    monthPicker.classList.remove('hidden');
+    return;
+  }
+
+  monthPicker.classList.add('hidden');
+
   const hours = parseInt(e.target.dataset.hours);
   console.log(`⏱️ Changed time range to ${hours} hours`);
-  
+
   if (currentDevice) {
     loadDeviceData(currentDevice, hours);
   }
+}
+
+function handleViewMonth() {
+  if (!currentDevice) return;
+
+  const year = parseInt(chartYearSelect.value);
+  const month = parseInt(chartMonthSelect.value);
+  console.log(`⏱️ Changed chart range to ${year}-${month}`);
+
+  loadDeviceMonthData(currentDevice, year, month);
+}
+
+function populateChartYearSelect() {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+
+  chartYearSelect.innerHTML = '';
+
+  for (let year = currentYear; year >= currentYear - 2; year--) {
+    const option = document.createElement('option');
+    option.value = year;
+    option.textContent = year + 543; // แสดงเป็น พ.ศ.
+    chartYearSelect.appendChild(option);
+  }
+
+  chartMonthSelect.value = currentMonth;
+  chartYearSelect.value = currentYear;
 }
 
 // ========== EDIT NAME ==========
