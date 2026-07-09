@@ -463,15 +463,18 @@ function showDevicesList() {
 
 // ========== TEMPERATURE HELPERS ==========
 function getAlertLevel(temp, type) {
-  if (type === 'chiller') {
-    if (temp < -20 || temp > 15) return 'critical';
-    if ((temp >= -20 && temp <= 2) || (temp >= 8 && temp <= 15)) return 'warning';
-    return 'normal';
-  } else {
-    if (temp < -30 || temp > 0) return 'critical';
-    if ((temp >= -30 && temp <= -20) || (temp >= -10 && temp <= 0)) return 'warning';
-    return 'normal';
+  // TEMP_STANDARD (charts.js): chiller +2~+8C, freezer -25~-15C - the same
+  // standard used for the chart zone bands and the PDF report.
+  const range = TEMP_STANDARD[type];
+  const warningBuffer = type === 'chiller' ? 3 : 5;
+
+  if (temp < range.min - warningBuffer || temp > range.max + warningBuffer) {
+    return 'critical';
   }
+  if (temp < range.min || temp > range.max) {
+    return 'warning';
+  }
+  return 'normal';
 }
 
 function getStatusText(level) {

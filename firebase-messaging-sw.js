@@ -30,6 +30,7 @@ messaging.onBackgroundMessage((payload) => {
     tag: 'temperature-alert',
     requireInteraction: payload.data?.severity === 'critical',
     vibrate: payload.data?.severity === 'critical' ? [200, 100, 200, 100, 200] : [200, 100, 200],
+    silent: false,
     data: {
       url: self.location.origin + '/',
       ...payload.data
