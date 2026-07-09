@@ -3,9 +3,11 @@
  * Handles offline caching and background sync
  */
 
-const CACHE_NAME = 'fridge-monitor-v1.0.0';
+const CACHE_NAME = 'fridge-monitor-v1.1.0';
 
-// Files to cache
+// App shell files: always fetched from network first so edits go live
+// immediately, without needing to bump CACHE_NAME on every deploy.
+// Cache is only used as an offline fallback.
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -22,13 +24,28 @@ const STATIC_ASSETS = [
   './icons/icon-512.png'
 ];
 
-// External libraries (CDN)
+// Version-pinned external libraries (CDN) - safe to cache-first since the
+// URL itself changes whenever the version changes.
 const EXTERNAL_ASSETS = [
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
   'https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js'
 ];
+
+// Same-origin file types that change with app updates and should always be
+// revalidated against the network first (HTML/JS/CSS/JSON app shell).
+const NETWORK_FIRST_EXTENSIONS = ['.html', '.js', '.css', '.json'];
+
+function isNetworkFirst(urlObj) {
+  if (urlObj.origin !== self.location.origin) {
+    return false;
+  }
+  if (urlObj.pathname === '/' || urlObj.pathname.endsWith('/')) {
+    return true;
+  }
+  return NETWORK_FIRST_EXTENSIONS.some(ext => urlObj.pathname.endsWith(ext));
+}
 
 /**
  * Check if URL should be cached
@@ -92,7 +109,13 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS.concat(EXTERNAL_ASSETS));
+        // Bypass the HTTP cache so the app shell is primed with genuinely
+        // fresh files, then cache the version-pinned CDN assets normally.
+        const staticRequests = STATIC_ASSETS.map(url => new Request(url, { cache: 'reload' }));
+        return Promise.all([
+          cache.addAll(staticRequests),
+          cache.addAll(EXTERNAL_ASSETS)
+        ]);
       })
       .then(() => {
         console.log('[SW] Install complete');
@@ -133,11 +156,78 @@ self.addEventListener('activate', event => {
 });
 
 /**
- * Fetch event - serve from cache with network fallback
+ * Cache-then-network-update helper: return whatever's cached immediately,
+ * but always refresh the cache in the background so the *next* load is current.
+ */
+function staleWhileRevalidate(event, request, url) {
+  return caches.match(request).then(cachedResponse => {
+    const networkFetch = fetch(request)
+      .then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type !== 'error') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            if (shouldCache(url)) {
+              cache.put(request, responseToCache).catch(() => {});
+            }
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => null);
+
+    if (cachedResponse) {
+      // Keep the SW alive long enough for the background refresh to finish,
+      // without making the current response wait on it.
+      event.waitUntil(networkFetch);
+      return cachedResponse;
+    }
+
+    return networkFetch.then(networkResponse => {
+      if (networkResponse) {
+        return networkResponse;
+      }
+      throw new Error('Network fetch failed and no cache available');
+    });
+  });
+}
+
+/**
+ * Network-first helper: always try the network so app-shell edits go live
+ * immediately; fall back to cache (or the cached index.html) when offline.
+ */
+function networkFirst(request, url) {
+  return fetch(request)
+    .then(networkResponse => {
+      if (networkResponse && networkResponse.status === 200 && networkResponse.type !== 'error') {
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          if (shouldCache(url)) {
+            cache.put(request, responseToCache).catch(() => {});
+          }
+        });
+      }
+      return networkResponse;
+    })
+    .catch(() => {
+      return caches.match(request).then(cachedResponse => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        if (request.destination === 'document') {
+          return caches.match('./index.html');
+        }
+        throw new Error('Fetch failed and no cache available');
+      });
+    });
+}
+
+/**
+ * Fetch event - network-first for the app shell (always fresh), stale-while-
+ * revalidate for pinned CDN/icon assets (fast, still self-updating).
  */
 self.addEventListener('fetch', event => {
   const url = event.request.url;
-  
+
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
     return;
@@ -148,53 +238,12 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  const urlObj = new URL(url);
+
   event.respondWith(
-    caches.match(event.request)
-      .then(cachedResponse => {
-        // Return cached response if available
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        // Fetch from network
-        return fetch(event.request)
-          .then(networkResponse => {
-            // Check if valid response
-            if (!networkResponse || 
-                networkResponse.status !== 200 || 
-                networkResponse.type === 'error') {
-              return networkResponse;
-            }
-
-            // Clone response (can only read once)
-            const responseToCache = networkResponse.clone();
-
-            // Cache the response
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                // Double check before caching
-                if (shouldCache(url)) {
-                  cache.put(event.request, responseToCache)
-                    .catch(err => {
-                      // Silently fail - don't break the app
-                      console.warn('[SW] Cache put failed:', err.message);
-                    });
-                }
-              });
-
-            return networkResponse;
-          })
-          .catch(error => {
-            console.error('[SW] Fetch failed:', error);
-            
-            // Return offline page or fallback
-            if (event.request.destination === 'document') {
-              return caches.match('./index.html');
-            }
-            
-            throw error;
-          });
-      })
+    isNetworkFirst(urlObj)
+      ? networkFirst(event.request, url)
+      : staleWhileRevalidate(event, event.request, url)
   );
 });
 

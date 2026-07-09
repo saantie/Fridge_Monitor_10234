@@ -133,14 +133,35 @@ document.addEventListener('click', (e) => {
 // ========== SERVICE WORKER ==========
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
+    // A new SW calls skipWaiting()/clients.claim() automatically, so once it
+    // takes control, reload once to pick up the latest app shell everywhere.
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      console.log('🔄 New Service Worker activated - reloading for latest version');
+      window.location.reload();
+    });
+
     navigator.serviceWorker.register('./sw.js')
       .then(registration => {
         console.log('✅ Service Worker registered:', registration.scope);
-        
+
         // Check for updates
         registration.addEventListener('updatefound', () => {
           console.log('🔄 Service Worker update found');
         });
+
+        // The browser only checks for a new sw.js on navigation / roughly
+        // every 24h by default - force a check whenever the app becomes
+        // active so updates are picked up as soon as possible.
+        registration.update();
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            registration.update();
+          }
+        });
+        setInterval(() => registration.update(), 30 * 60 * 1000); // every 30 min
       })
       .catch(error => {
         console.error('❌ Service Worker registration failed:', error);
