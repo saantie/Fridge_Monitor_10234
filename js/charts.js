@@ -39,7 +39,6 @@ class TempChart {
             label: 'Chiller (°C)',
             data: chillerData,
             borderColor: '#FF7043',
-            backgroundColor: 'rgba(255, 112, 67, 0.12)',
             borderWidth: 2,
             borderDash: [],
             pointStyle: 'circle',
@@ -47,13 +46,12 @@ class TempChart {
             pointHoverRadius: 5,
             pointBackgroundColor: '#FF7043',
             tension: 0.4,
-            fill: true
+            fill: false
           },
           {
             label: 'Freezer (°C)',
             data: freezerData,
             borderColor: '#3F51B5',
-            backgroundColor: 'rgba(63, 81, 181, 0.12)',
             borderWidth: 2,
             borderDash: [6, 4],
             pointStyle: 'triangle',
@@ -61,7 +59,7 @@ class TempChart {
             pointHoverRadius: 6,
             pointBackgroundColor: '#3F51B5',
             tension: 0.4,
-            fill: true
+            fill: false
           }
         ]
       },
