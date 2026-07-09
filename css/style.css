@@ -630,6 +630,26 @@ html {
   border: 1px solid var(--border-color);
 }
 
+.chart-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.chart-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.chart-reset-btn {
+  padding: 0.4rem 0.6rem;
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .last-update {
   text-align: center;
   color: var(--text-secondary);
@@ -1392,6 +1412,10 @@ input:checked + .slider:before {
   
   .chart-container {
     padding: 1rem;
+  }
+
+  .chart-hint {
+    font-size: 0.7rem;
   }
 
   .device-temps {

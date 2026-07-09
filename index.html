@@ -24,6 +24,7 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     
     <!-- jsPDF + html2canvas for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -102,6 +103,10 @@
 
             <!-- Chart Container -->
             <div class="chart-container" id="chartContainer">
+                <div class="chart-toolbar">
+                    <span class="chart-hint">💡 ลากเพื่อเลื่อนดูย้อนหลัง • เลื่อนล้อ/บีบนิ้วเพื่อซูม</span>
+                    <button id="resetZoomBtn" class="btn-icon chart-reset-btn" title="รีเซ็ตมุมมอง">↺</button>
+                </div>
                 <canvas id="tempChart"></canvas>
             </div>
 

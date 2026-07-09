@@ -26,6 +26,7 @@ const backBtn = document.getElementById('backBtn');
 const editNameBtn = document.getElementById('editNameBtn');
 const exportPdfBtn = document.getElementById('exportPdfBtn');
 const deviceTitle = document.getElementById('deviceTitle');
+const resetZoomBtn = document.getElementById('resetZoomBtn');
 
 // Temperature display
 const chillerTemp = document.getElementById('chillerTemp');
@@ -103,6 +104,9 @@ function setupEventListeners() {
   backBtn.addEventListener('click', showDevicesList);
   editNameBtn.addEventListener('click', showEditModal);
   exportPdfBtn.addEventListener('click', showExportModal);
+  resetZoomBtn.addEventListener('click', () => {
+    if (tempChart) tempChart.resetZoom();
+  });
   
   // Edit name modal
   cancelEditBtn.addEventListener('click', hideEditModal);

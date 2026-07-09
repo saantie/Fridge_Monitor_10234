@@ -93,7 +93,7 @@ class TempChart {
                   content: TEMP_STANDARD.chiller.label,
                   position: { x: 'end', y: 'start' },
                   backgroundColor: `rgba(${TEMP_STANDARD.chiller.color}, 0.85)`,
-                  color: '#fff',
+                  color: '#000',
                   font: { size: 10, weight: 'bold' },
                   padding: 4
                 }
@@ -111,11 +111,25 @@ class TempChart {
                   content: TEMP_STANDARD.freezer.label,
                   position: { x: 'end', y: 'end' },
                   backgroundColor: `rgba(${TEMP_STANDARD.freezer.color}, 0.85)`,
-                  color: '#fff',
+                  color: '#000',
                   font: { size: 10, weight: 'bold' },
                   padding: 4
                 }
               }
+            }
+          },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x'
+            },
+            zoom: {
+              wheel: { enabled: true },
+              pinch: { enabled: true },
+              mode: 'x'
+            },
+            limits: {
+              x: { minRange: 5 }
             }
           }
         },
@@ -138,6 +152,12 @@ class TempChart {
         }
       }
     });
+  }
+
+  resetZoom() {
+    if (this.chart) {
+      this.chart.resetZoom();
+    }
   }
 
   destroy() {
