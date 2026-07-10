@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="รายการเหตุการณ์อุณหภูมิผิดปกติของตู้เย็น/ตู้แช่แข็ง">
+
+    <title>เหตุการณ์ผิดปกติ - Fridge Monitor</title>
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="./icons/icon-192.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <!-- ========== HEADER ========== -->
+    <header class="header">
+        <h1>📋 เหตุการณ์อุณหภูมิผิดปกติ</h1>
+        <div class="header-buttons">
+            <a href="./" class="icon-btn" title="กลับหน้าแรก">←</a>
+        </div>
+    </header>
+
+    <!-- ========== LOADING ========== -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <!-- ========== ERROR MESSAGE ========== -->
+    <div id="errorMsg" class="error-msg hidden">
+        <p id="errorText"></p>
+    </div>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="container events-page hidden" id="eventsPage">
+
+        <!-- Month Picker -->
+        <div class="month-picker">
+            <label for="eventsMonthSelect">เดือน:</label>
+            <select id="eventsMonthSelect">
+                <option value="1">มกราคม</option>
+                <option value="2">กุมภาพันธ์</option>
+                <option value="3">มีนาคม</option>
+                <option value="4">เมษายน</option>
+                <option value="5">พฤษภาคม</option>
+                <option value="6">มิถุนายน</option>
+                <option value="7">กรกฎาคม</option>
+                <option value="8">สิงหาคม</option>
+                <option value="9">กันยายน</option>
+                <option value="10">ตุลาคม</option>
+                <option value="11">พฤศจิกายน</option>
+                <option value="12">ธันวาคม</option>
+            </select>
+            <label for="eventsYearSelect">ปี:</label>
+            <select id="eventsYearSelect">
+                <!-- Will be populated by JavaScript -->
+            </select>
+            <button id="viewEventsBtn" class="btn-primary">ดูข้อมูล</button>
+        </div>
+
+        <!-- Month Summary Stats -->
+        <div id="eventsMonthSummary" class="events-month-summary"></div>
+
+        <!-- Events List -->
+        <div id="eventsListContainer" class="events-list"></div>
+
+    </main>
+
+    <!-- ========== SCRIPTS ========== -->
+    <script src="./js/version.js"></script>
+    <script src="./js/api.js"></script>
+    <script src="./js/charts.js"></script>
+    <script src="./js/events.js"></script>
+    <script src="./js/events-page.js"></script>
+</body>
+</html>

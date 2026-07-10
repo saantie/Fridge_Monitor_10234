@@ -44,97 +44,15 @@ function registerThaiFont(doc, fontData) {
 }
 
 // ========== Shared constants ==========
-const THAI_MONTH_NAMES = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+// THAI_MONTH_NAMES and the out-of-range event detection helpers (isOutOfRange,
+// detectOutOfRangeEvents, formatDuration, formatDateTimeShort, ...) live in
+// js/events.js, loaded before this script - shared with the dashboard summary
+// banner and the events history page.
 
 const CHILLER_COLOR_HEX = '#FF7043';
 const CHILLER_COLOR_RGB = [255, 112, 67];
 const FREEZER_COLOR_HEX = '#3F51B5';
 const FREEZER_COLOR_RGB = [63, 81, 181];
-
-// ========== Out-of-range event detection ==========
-// "Standard" here is TEMP_STANDARD from charts.js (chiller +2~+8C, freezer -25~-15C),
-// loaded before this script - shared as the single source of truth for what counts as an alert.
-function isOutOfRange(type, value) {
-  const range = TEMP_STANDARD[type];
-  return value < range.min || value > range.max;
-}
-
-function estimateSamplingIntervalMs(sortedData) {
-  if (sortedData.length < 2) return 30 * 60 * 1000;
-  const gaps = [];
-  for (let i = 1; i < sortedData.length; i++) {
-    const gap = new Date(sortedData[i].timestamp) - new Date(sortedData[i - 1].timestamp);
-    if (gap > 0) gaps.push(gap);
-  }
-  if (gaps.length === 0) return 30 * 60 * 1000;
-  gaps.sort((a, b) => a - b);
-  return gaps[Math.floor(gaps.length / 2)];
-}
-
-function detectOutOfRangeEvents(sortedData) {
-  const samplingIntervalMs = estimateSamplingIntervalMs(sortedData);
-  const events = [];
-  const open = { chiller: null, freezer: null };
-
-  const closeEvent = (type, endTimestamp) => {
-    const ev = open[type];
-    if (!ev) return;
-    ev.end = endTimestamp;
-    ev.durationMs = new Date(ev.end) - new Date(ev.start);
-    events.push(ev);
-    open[type] = null;
-  };
-
-  sortedData.forEach(record => {
-    ['chiller', 'freezer'].forEach(type => {
-      const value = parseFloat(record[type]);
-      if (isNaN(value)) return;
-
-      if (isOutOfRange(type, value)) {
-        if (!open[type]) {
-          open[type] = { type, start: record.timestamp, end: record.timestamp, minVal: value, maxVal: value, count: 1 };
-        } else {
-          open[type].minVal = Math.min(open[type].minVal, value);
-          open[type].maxVal = Math.max(open[type].maxVal, value);
-          open[type].count++;
-        }
-      } else if (open[type]) {
-        closeEvent(type, record.timestamp);
-      }
-    });
-  });
-
-  // An event still open at the end of the month is extended by one sampling
-  // interval, since we have no later reading to mark when it actually ended.
-  ['chiller', 'freezer'].forEach(type => {
-    if (open[type]) {
-      const extendedEnd = new Date(new Date(open[type].end).getTime() + samplingIntervalMs).toISOString();
-      closeEvent(type, extendedEnd);
-    }
-  });
-
-  events.sort((a, b) => new Date(a.start) - new Date(b.start));
-  return events;
-}
-
-function formatDuration(ms) {
-  const totalMinutes = Math.max(1, Math.round(ms / 60000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours > 0 && minutes > 0) return `${hours} ชม. ${minutes} นาที`;
-  if (hours > 0) return `${hours} ชม.`;
-  return `${minutes} นาที`;
-}
-
-function formatDateTimeShort(timestamp) {
-  const d = new Date(timestamp);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${dd}/${mm} ${hh}:${mi}`;
-}
 
 // ========== Shared paginated table renderer ==========
 function drawTableHeader(doc, columns, y, pageWidth) {

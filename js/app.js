@@ -17,6 +17,8 @@ const loading = document.getElementById('loading');
 const errorMsg = document.getElementById('errorMsg');
 const errorText = document.getElementById('errorText');
 const devicesList = document.getElementById('devicesList');
+const devicesGrid = document.getElementById('devicesGrid');
+const eventsSummaryBanner = document.getElementById('eventsSummaryBanner');
 const deviceDetail = document.getElementById('deviceDetail');
 
 // Header buttons
@@ -277,7 +279,8 @@ async function loadDevices() {
     
     console.log(`✅ Loaded ${response.devices.length} devices`);
     displayDevices(response.devices);
-    
+    loadEventsSummary(response.devices);
+
   } catch (error) {
     console.error('❌ Load devices failed:', error);
     showError('ไม่สามารถโหลดข้อมูลได้: ' + error.message);
@@ -287,10 +290,10 @@ async function loadDevices() {
 }
 
 function displayDevices(devices) {
-  devicesList.innerHTML = '';
-  
+  devicesGrid.innerHTML = '';
+
   if (devices.length === 0) {
-    devicesList.innerHTML = `
+    devicesGrid.innerHTML = `
       <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
         <p style="font-size: 3rem;">📭</p>
         <p style="font-size: 1.2rem; margin-top: 1rem;">ยังไม่มีเครื่องในระบบ</p>
@@ -299,11 +302,73 @@ function displayDevices(devices) {
     `;
     return;
   }
-  
+
   devices.forEach(device => {
     const card = createDeviceCard(device);
-    devicesList.appendChild(card);
+    devicesGrid.appendChild(card);
   });
+}
+
+// ========== EVENTS SUMMARY BANNER (this month) ==========
+async function loadEventsSummary(devices) {
+  if (!devices || devices.length === 0) {
+    eventsSummaryBanner.classList.add('hidden');
+    return;
+  }
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  eventsSummaryBanner.classList.remove('hidden', 'has-events');
+  eventsSummaryBanner.onclick = null;
+  eventsSummaryBanner.innerHTML = `
+    <div class="events-summary-icon">📋</div>
+    <div class="events-summary-body">
+      <div class="events-summary-title">กำลังตรวจสอบเหตุการณ์อุณหภูมิผิดปกติของเดือนนี้...</div>
+    </div>
+  `;
+
+  try {
+    const events = await fetchMonthEventsForDevices(devices, year, month);
+    renderEventsSummaryBanner(events, year, month);
+  } catch (error) {
+    console.error('❌ Load events summary failed:', error);
+    eventsSummaryBanner.classList.add('hidden');
+  }
+}
+
+function renderEventsSummaryBanner(events, year, month) {
+  const monthLabel = `${THAI_MONTH_NAMES[month - 1]} ${year + 543}`;
+
+  if (events.length === 0) {
+    eventsSummaryBanner.classList.remove('has-events');
+    eventsSummaryBanner.innerHTML = `
+      <div class="events-summary-icon">✅</div>
+      <div class="events-summary-body">
+        <div class="events-summary-title">เดือน${monthLabel} ยังไม่พบเหตุการณ์อุณหภูมิผิดปกติ</div>
+        <div class="events-summary-detail">แตะเพื่อดูรายการเหตุการณ์ย้อนหลัง</div>
+      </div>
+      <div class="events-summary-arrow">›</div>
+    `;
+  } else {
+    const longest = findLongestEvent(events);
+    const typeLabel = longest.type === 'chiller' ? 'ช่องธรรมดา' : 'ช่องแช่แข็ง';
+
+    eventsSummaryBanner.classList.add('has-events');
+    eventsSummaryBanner.innerHTML = `
+      <div class="events-summary-icon">⚠️</div>
+      <div class="events-summary-body">
+        <div class="events-summary-title">เดือน${monthLabel} มีเหตุการณ์อุณหภูมิผิดปกติ ${events.length} ครั้ง</div>
+        <div class="events-summary-detail">ครั้งที่นานที่สุด: ${escapeHtml(longest.deviceName)} · ${typeLabel} · เริ่ม ${formatTimestamp(longest.start)} (นาน ${formatDuration(longest.durationMs)})</div>
+      </div>
+      <div class="events-summary-arrow">›</div>
+    `;
+  }
+
+  eventsSummaryBanner.onclick = () => {
+    window.location.href = `events.html?year=${year}&month=${month}`;
+  };
 }
 
 function createDeviceCard(device) {
