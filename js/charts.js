@@ -6,13 +6,50 @@ const TEMP_STANDARD = {
   freezer: { min: -25, max: -15, label: 'ช่องแช่แข็ง (-25°C ถึง -15°C)', color: '3, 169, 244' } // ฟ้า
 };
 
+// Alternating day-divider bands, so a multi-day chart (7-day / month view) reads
+// as distinct days at a glance instead of one continuous unbroken line. Boundaries
+// sit halfway between the last point of one day and the first point of the next,
+// using fractional category-scale indices - works whether the day has 1 point or 200.
+function buildDayBandAnnotations(data) {
+  const days = [];
+  let lastKey = null;
+
+  data.forEach((d, index) => {
+    const date = new Date(d.timestamp);
+    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    if (key !== lastKey) {
+      days.push({ startIndex: index });
+      lastKey = key;
+    }
+  });
+
+  const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const bandColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(45, 55, 72, 0.05)';
+
+  const annotations = {};
+  days.forEach((day, i) => {
+    if (i % 2 !== 0) return; // shade every other day
+    const nextStart = days[i + 1] ? days[i + 1].startIndex : data.length;
+    annotations[`dayBand${i}`] = {
+      type: 'box',
+      xMin: Math.max(day.startIndex - 0.5, 0),
+      xMax: nextStart - 0.5,
+      backgroundColor: bandColor,
+      borderWidth: 0,
+      drawTime: 'beforeDatasetsDraw'
+    };
+  });
+
+  return annotations;
+}
+
 class TempChart {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
     this.chart = null;
   }
 
-  create(data) {
+  create(data, { showDayBands = false } = {}) {
     // A full month of readings can be thousands of points - sample down so
     // the chart stays responsive; pan/zoom lets users inspect any stretch closely.
     const MAX_POINTS = 500;
@@ -20,6 +57,8 @@ class TempChart {
       const step = Math.ceil(data.length / MAX_POINTS);
       data = data.filter((_, index) => index % step === 0);
     }
+
+    const dayBandAnnotations = showDayBands ? buildDayBandAnnotations(data) : {};
 
     const timestamps = data.map(d => {
       const date = new Date(d.timestamp);
@@ -86,6 +125,7 @@ class TempChart {
           },
           annotation: {
             annotations: {
+              ...dayBandAnnotations,
               chillerZone: {
                 type: 'box',
                 yMin: TEMP_STANDARD.chiller.min,

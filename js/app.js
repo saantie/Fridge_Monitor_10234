@@ -455,10 +455,10 @@ async function loadDeviceData(device, hours) {
     if (!tempChart) {
       tempChart = new TempChart('tempChart');
     }
-    
-    tempChart.create(response.data);
+
+    tempChart.create(response.data, { showDayBands: hours >= 168 });
     console.log(`✅ Loaded ${response.data.length} data points`);
-    
+
   } catch (error) {
     console.error('❌ Load device data failed:', error);
     showError('ไม่สามารถโหลดข้อมูลกราฟได้: ' + error.message);
@@ -488,7 +488,7 @@ async function loadDeviceMonthData(device, year, month) {
       return;
     }
 
-    tempChart.create(response.data);
+    tempChart.create(response.data, { showDayBands: true });
     console.log(`✅ Loaded ${response.data.length} data points`);
 
   } catch (error) {
